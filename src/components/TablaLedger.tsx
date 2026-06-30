@@ -1,8 +1,8 @@
 import React from 'react';
-import type { FilaDatos } from '../Types/Simulacion';
+import type { FilaMuestra } from '../Types/Simulacion';
 
 interface TablaLedgerProps {
-    mocktabla: FilaDatos[];
+    mocktabla: FilaMuestra[];
     verTodasFilas: boolean;
     setVerTodasFilas: (val: boolean) => void;
 }

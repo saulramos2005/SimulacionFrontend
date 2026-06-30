@@ -60,12 +60,12 @@ export const AbstractParams: React.FC<ParametrosProps> = ({
 
           <div className="grid grid-cols-1 gap-8">
             {/* Metodo */}
-            <div className="">
+            <div className="w-full">
               <label className="block font-sans text-xs uppercase font-bold text-slate-500 mb-2">Método Generador</label>
               <select
                 value={metodo}
                 onChange={(e) => setMetodo(e.target.value)}
-                className="underlined-input font-sans font-bold cursor-pointer"
+                className="underlined-input w-full font-sans font-bold cursor-pointer"
               >
                 <option>Congruencial Multiplicativo</option>
                 <option>Medios Cuadrados</option>
@@ -73,19 +73,19 @@ export const AbstractParams: React.FC<ParametrosProps> = ({
             </div>
 
             {/* Distribucion */}
-            <div className="">
+            <div className="w-full">
               <label className="block font-sans text-xs uppercase font-bold text-slate-500 mb-2">Distribución</label>
               <select
                 value={distribucion}
                 onChange={(e) => setDistribucion(e.target.value)}
-                className="underlined-input font-sans font-bold cursor-pointer"
+                className="underlined-input w-full font-sans font-bold cursor-pointer"
               >
                 <option>Uniforme</option>
               </select>
             </div>
 
             {/* Parametros */}
-            <div className="col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
               <div>
                 <label className="block font-sans text-xs uppercase font-bold text-slate-500 mb-2">Semilla (X₀)</label>
                 <input type="text" value={seed} onChange={(e) => setSeed(e.target.value)} className="underlined-input" />

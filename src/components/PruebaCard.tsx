@@ -42,8 +42,8 @@ export function PruebaCard({ estado, nombre, FilaDatos }: Props) {
 
       </div>
       <div className="space-y-2 mt-2">
-        {FilaDatos.map((fila) => (
-          <div className="flex justify-between text-xs border-b border-slate-300 pb-2">
+        {FilaDatos.map((fila, index) => (
+          <div key= {index} className="flex justify-between text-xs border-b border-slate-300 pb-2">
             <span className="font-bold">{fila.label}</span>
             <span>{fila.valor}</span>
           </div>

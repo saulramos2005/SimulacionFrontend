@@ -1,37 +1,41 @@
-import type { FilaPrueba } from "../Types/Simulacion";
+import type { SimulacionResults } from "../Types/Simulacion";
 import { PruebaCard } from "./PruebaCard";
 
-const mockTabla2: FilaPrueba[] = [
-  {
-    metodo: "Kolmogorov-Smirnov",
-    ec: 0.02412,
-    vc: 0.04300,
-  },
-  {
-    metodo: "Varianza",
-    ec: 98.016,
-    vc: 1.01200,
-  },
-  {
-    metodo: "Rachas (Independencia)",
-    ec: 1.12054,
-    vc: 1.96000,
-  },
-  {
-    metodo: "Media",
-    ec: 2.45012,
-    vc: 1.96000,
-  }
-]
-export function SectionPruebas() {
+interface Pruebas{
+  resultados: SimulacionResults;
+}
+
+export function Pruebas( {resultados}: Pruebas) {
+  const tablaData = [
+    { metodo: "Kolmogorov-Smirnov", ec: resultados.pruebas.K_Smirnov.estadistico_D, vc: resultados.pruebas.K_Smirnov.valor_critico },
+    { metodo: "Varianza", ec: resultados.pruebas.Varianza.valor_estadistico, vc: resultados.pruebas.Varianza.valor_critico},
+    { metodo: "Rachas (Independencia)", ec: resultados.pruebas.Rachas.estadistico_Z, vc: resultados.pruebas.Rachas.valor_critico_Z },
+    { metodo: "Media", ec: resultados.pruebas.Media.estadistico, vc: resultados.pruebas.Media.valor_critico[1] },
+  ];
   return (
     <section className='space-y-6'>
       <h3 className="border-b-2 pb-6 font-serif italic font-black text-xl">III. Análisis de Resultados (Pruebas)</h3>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-        <PruebaCard estado="Rechazada" nombre="K-Smirnov" FilaDatos={[{ label: "D⁺", valor: 0.036127 }, { label: "D⁻", valor: 0.036804 }]} />
-        <PruebaCard estado="Aprobada" nombre="Media" FilaDatos={[{ label: "Lim. Inf", valor: 0.443420 }, { label: "Lim. Sup", valor: 1.536580 }]} />
-        <PruebaCard estado="Aprobada" nombre="Varianza" FilaDatos={[{ label: "Lim. Inf", valor: 0.443420 },{ label: "Lim. Sup", valor: 1.536580 }]} />
-        <PruebaCard estado="Aprobada" nombre="Rachas" FilaDatos={[{ label: "μ", valor: 250.5 },{ label: "σ²", valor: 12.3}, { label: "c₀", valor: 240}]} />
+       <PruebaCard 
+          estado={resultados.pruebas.K_Smirnov.rechazar_H0 ? "Rechazada" : "Aprobada"} 
+          nombre="K-Smirnov" 
+          FilaDatos={[{ label: "Estadístico D+", valor: resultados.pruebas.K_Smirnov.estadistico_D }]} 
+        />
+        <PruebaCard 
+          estado={resultados.pruebas.Media.rechazar_H0 ? "Rechazada" : "Aprobada"} 
+          nombre="Media" 
+          FilaDatos={[{ label: "Lim. Inf", valor: resultados.pruebas.Media.media_muestral}]} 
+        />
+        <PruebaCard 
+          estado={resultados.pruebas.Varianza.rechazar_H0 ? "Rechazada" : "Aprobada"} 
+          nombre="Varianza" 
+          FilaDatos={[{ label: "Varianza Muestral", valor: resultados.pruebas.Varianza.varianza_muestral }]} 
+        />
+        <PruebaCard 
+          estado={resultados.pruebas.Rachas.rechazar_H0 ? "Rechazada" : "Aprobada"} 
+          nombre="Rachas" 
+          FilaDatos={[{ label: "Rachas Obs.", valor: resultados.pruebas.Rachas.rachas_observadas }, { label: "Z", valor: resultados.pruebas.Rachas.estadistico_Z }]} 
+        />
       </div>
 
       <div className='overflow-x-auto'>
@@ -44,8 +48,8 @@ export function SectionPruebas() {
             </tr>
           </thead>
           <tbody data-kid="91">
-            {mockTabla2.map((f) => (
-              <tr data-kid="92">
+            {tablaData.map((f, index) => (
+              <tr key= {index} data-kid="92">
                 <td data-kid="93">{f.metodo}</td>
                 <td className="mono" data-kid="94">{f.ec}</td>
                 <td className="mono" data-kid="95">{f.vc}</td>

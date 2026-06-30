@@ -16,12 +16,11 @@ import type { ChartData } from 'chart.js'
 import { Header } from './components/Header';
 import { AbstractParams } from './components/Parametros';
 import { GraficosResultados } from './components/GraficosResultados';
-import { SectionPruebas } from './components/Pruebas';
+import { Pruebas } from './components/Pruebas';
 import { TablaLedger } from './components/TablaLedger';
 import { Conclusion } from './components/Conclusion';
-import type { FilaDatos } from './Types/Simulacion';
-
-import { generarLCG, generarMediosCuadrados } from './utils/generadores';
+import type { SimulacionParams, FilaMuestra } from './Types/Simulacion';
+import { useSimulacion } from './hooks/useSimulacion';
 
 // Registrar plugins de GSAP y componentes de Chart.js
 gsap.registerPlugin(ScrollTrigger);
@@ -44,8 +43,10 @@ export default function App(): React.JSX.Element {
   const [sampleSize, setSampleSize] = useState<string>('1000');
   const [digitos, setDigitos] = useState<string>('4');
 
+  const { resultados, ejecutarSimulacion } = useSimulacion();
+
   // Estados de datos procesados 
-  const [tablaDatos, setTablaDatos] = useState<FilaDatos[]>([]);
+  const [tablaDatos, setTablaDatos] = useState<FilaMuestra[]>([]);
   const [histogramData, setHistogramData] = useState<ChartData<'bar'>>({ labels: [], datasets: [] });
   const [lineData, setLineData] = useState<ChartData<'line'>>({ labels: [], datasets: [] });
   const [simulacionGenerada, setSimulacionGenerada] = useState<boolean>(false);
@@ -58,69 +59,100 @@ export default function App(): React.JSX.Element {
     }
   }, [metodo]);
 
-  const ejecutarProtocolo = (e?: MouseEvent<HTMLButtonElement>): void => {
+  const ejecutarProtocolo = async(e?: MouseEvent<HTMLButtonElement>): Promise<void> => {
     if (e) e.preventDefault();
-    
-    const s = parseInt(seed, 10) || 1234;
-    const a = parseInt(multiplier, 10) || 16807;
-    const m = parseInt(modulo, 10) || 2147483647;
-    const n = parseInt(sampleSize, 10) || 100;
 
-    const resultados = metodo === 'Congruencial Multiplicativo' 
-      ? generarLCG(s, a, m, n) 
-      : generarMediosCuadrados(s, n);
+    const esCongruencial = metodo === 'Congruencial Multiplicativo';
 
-    // 1. Calcular Frecuencias para el Histograma
-    const conteos = [0, 0, 0, 0, 0];
-    resultados.norms.forEach(v => {
-      if (v < 0.2) conteos[0]++; 
-      else if (v < 0.4) conteos[1]++;
-      else if (v < 0.6) conteos[2]++; 
-      else if (v < 0.8) conteos[3]++; 
-      else conteos[4]++;
-    });
-
-    // 2. Actualizar estado del Histograma
-    setHistogramData({
-      labels: ['0.0-0.2', '0.2-0.4', '0.4-0.6', '0.6-0.8', '0.8-1.0'],
-      datasets: [{
-        label: 'Frecuencia',
-        data: conteos,
-        backgroundColor: '#1E293B',
-        borderColor: '#000000',
-        borderWidth: 1,
-        barPercentage: 0.9,
-        categoryPercentage: 0.9,
-      }]
-    });
-
-    const iteracionesLinea = Math.min(n, 20);
-    setLineData({
-      labels: Array.from({ length: iteracionesLinea }, (_, i) => i + 1),
-      datasets: [{
-        label: 'Valor Normalizado',
-        data: resultados.norms.slice(0, iteracionesLinea),
-        borderColor: '#000000',
-        borderWidth: 1.5,
-        pointBackgroundColor: '#FFFFFF',
-        pointBorderColor: '#1E293B',
-        pointRadius: 3,
-        pointHoverRadius: 5,
-        tension: 0,
-      }]
-    });
-
-    // 4. Actualizar estado de la Tabla Ledger
-    const nuevasFilas: FilaDatos[] = resultados.raws.map((raw, index) => ({
-      id: String(index + 1).padStart(4, '0'),
-      raw: String(raw),
-      norm: resultados.norms[index].toFixed(6),
-      entropia: (0.95 + Math.random() * 0.04).toFixed(4) // Simulación de entropía original
-    }));
-    setTablaDatos(nuevasFilas);
-    setSimulacionGenerada(true);
+  const ContenidoBase = {
+    distribucion: distribucion.toLowerCase(), 
+    n: Number(sampleSize) || 100,
+    a: 0,
+    b: 1,
+    alpha: 0.05,
   };
 
+  let contenido: SimulacionParams;
+
+  if (esCongruencial) {
+    contenido = {
+      ...ContenidoBase,
+      metodo: 'congruencial',
+      parametros: {
+        mult: Number(multiplier) || 16807,
+        seed: Number(seed) || 1234,
+        mod: Number(modulo) || 2147483647
+      }
+    };
+  } else {
+    contenido = {
+      ...ContenidoBase,
+      metodo: 'medios_cuadrados',
+      parametros: {
+        seed: Number(seed) || 1234,
+        digito: Number(digitos) || 4
+      }
+    };
+  }
+  
+    await ejecutarSimulacion(contenido); 
+  };
+
+  useEffect(() => {
+    if (resultados && resultados.data) {
+      const normas = resultados.data;
+      const n = normas.length;
+
+      const conteos = [0, 0, 0, 0, 0];
+      normas.forEach((v: number) => {
+        if (v < 0.2) conteos[0]++; 
+        else if (v < 0.4) conteos[1]++;
+        else if (v < 0.6) conteos[2]++; 
+        else if (v < 0.8) conteos[3]++; 
+        else conteos[4]++;
+      });
+
+      setHistogramData({
+        labels: ['0.0-0.2', '0.2-0.4', '0.4-0.6', '0.6-0.8', '0.8-1.0'],
+        datasets: [{
+          label: 'Frecuencia',
+          data: conteos,
+          backgroundColor: '#1E293B',
+          borderColor: '#000000',
+          borderWidth: 1,
+          barPercentage: 0.9,
+          categoryPercentage: 0.9,
+        }]
+      });
+
+      const iteracionesLinea = Math.min(n, 20);
+      setLineData({
+        labels: Array.from({ length: iteracionesLinea }, (_, i) => i + 1),
+        datasets: [{
+          label: 'Valor Normalizado',
+          data: normas.slice(0, iteracionesLinea),
+          borderColor: '#000000',
+          borderWidth: 1.5,
+          pointBackgroundColor: '#FFFFFF',
+          pointBorderColor: '#1E293B',
+          pointRadius: 3,
+          pointHoverRadius: 5,
+          tension: 0,
+        }]
+      });
+
+      const nuevasFilas: FilaMuestra[] = normas.map((norm: number, index: number) => ({
+        id: String(index + 1).padStart(4, '0'),
+        raw: "Python API", 
+        norm: norm.toFixed(6),
+        entropia: (0.95 + Math.random() * 0.04).toFixed(4) 
+      }));
+
+      setTablaDatos(nuevasFilas);
+      setSimulacionGenerada(true);
+    }
+  }, [resultados]);
+    
   // Ciclo de vida y animaciones usando gsap.context() para evitar memory leaks
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -192,13 +224,13 @@ export default function App(): React.JSX.Element {
             onEjecutar={ejecutarProtocolo}
           />
 
-          {simulacionGenerada && (
+          {simulacionGenerada && resultados && (
             <>
               {/* Sección II: Gráficos Reactivos */}
               <GraficosResultados datosHistograma={histogramData} datosLineas={lineData} />
 
               {/* III: Pruebas */}
-              <SectionPruebas />
+              <Pruebas resultados={resultados} />
 
               {/* Sección IV: Tabla Ledger Dinámica */}
               <TablaLedger mocktabla={tablaDatos} verTodasFilas={false} setVerTodasFilas={() => {}} />
